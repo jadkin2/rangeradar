@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RangeRadar — Find Your Range, Anywhere</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+–green: #1a7a4a;
+–green-light: #22a05e;
+–green-pale: #e8f5ee;
+–green-mid: #d0eddc;
+–fairway: #0e5c35;
+–cream: #f7f4ee;
+–ink: #141a12;
+–muted: #5a6357;
+–border: #d4ddd0;
+–white: #ffffff;
+–flag-red: #c0392b;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+font-family: ‘DM Sans’, sans-serif;
+background: var(–cream);
+color: var(–ink);
+overflow-x: hidden;
+}
+
+/* NAV */
+nav {
+position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+display: flex; align-items: center; justify-content: space-between;
+padding: 18px 48px;
+background: rgba(247,244,238,0.92);
+backdrop-filter: blur(12px);
+border-bottom: 1px solid var(–border);
+}
+
+.nav-logo {
+font-family: ‘Bebas Neue’, sans-serif;
+font-size: 28px;
+letter-spacing: 0.04em;
+color: var(–fairway);
+display: flex; align-items: center; gap: 8px;
+}
+
+.nav-logo .radar-dot {
+width: 10px; height: 10px; border-radius: 50%;
+background: var(–green-light);
+animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+0%, 100% { transform: scale(1); opacity: 1; }
+50% { transform: scale(1.4); opacity: 0.6; }
+}
+
+.nav-links { display: flex; align-items: center; gap: 32px; }
+.nav-links a {
+font-size: 14px; font-weight: 500; color: var(–muted);
+text-decoration: none; letter-spacing: 0.02em;
+transition: color 0.2s;
+}
+.nav-links a:hover { color: var(–green); }
+
+.btn-nav {
+font-family: ‘DM Sans’, sans-serif;
+font-size: 14px; font-weight: 500;
+background: var(–fairway); color: var(–white);
+border: none; border-radius: 6px;
+padding: 10px 22px; cursor: pointer;
+letter-spacing: 0.03em;
+transition: background 0.2s, transform 0.15s;
+}
+.btn-nav:hover { background: var(–green); transform: translateY(-1px); }
+
+/* HERO */
+.hero {
+min-height: 100vh;
+display: flex; flex-direction: column;
+align-items: flex-start; justify-content: center;
+padding: 120px 48px 80px;
+position: relative; overflow: hidden;
+}
+
+.hero-bg {
+position: absolute; inset: 0; z-index: 0;
+background:
+radial-gradient(ellipse 60% 50% at 80% 50%, rgba(26,122,74,0.10) 0%, transparent 70%),
+linear-gradient(160deg, var(–cream) 55%, #ddf0e6 100%);
+}
+
+/* Grass texture lines */
+.hero-bg::after {
+content: ‘’;
+position: absolute; inset: 0;
+background-image: repeating-linear-gradient(
+90deg,
+transparent,
+transparent 38px,
+rgba(26,122,74,0.035) 38px,
+rgba(26,122,74,0.035) 40px
+);
+pointer-events: none;
+}
+
+/* Radar rings decorative */
+.radar-rings {
+position: absolute;
+right: -60px; top: 50%; transform: translateY(-50%);
+width: 600px; height: 600px;
+pointer-events: none; z-index: 1;
+}
+
+.radar-rings circle {
+fill: none;
+stroke: var(–green-light);
+transform-origin: center;
+}
+
+.radar-rings .ring-1 { stroke-width: 0.6; opacity: 0.18; }
+.radar-rings .ring-2 { stroke-width: 0.6; opacity: 0.13; }
+.radar-rings .ring-3 { stroke-width: 0.6; opacity: 0.09; }
+.radar-rings .ring-4 { stroke-width: 0.6; opacity: 0.06; }
+
+.radar-sweep {
+transform-origin: 300px 300px;
+animation: sweep 4s linear infinite;
+}
+
+@keyframes sweep {
+from { transform: rotate(0deg); }
+to { transform: rotate(360deg); }
+}
+
+/* Flag icon */
+.hero-flag {
+position: absolute; right: 200px; top: 38%;
+z-index: 2; opacity: 0.7;
+animation: flagwave 3s ease-in-out infinite;
+}
+
+@keyframes flagwave {
+0%, 100% { transform: rotate(-2deg); }
+50% { transform: rotate(2deg); }
+}
+
+.hero-content { position: relative; z-index: 2; max-width: 640px; }
+
+.eyebrow {
+font-family: ‘DM Mono’, monospace;
+font-size: 12px; font-weight: 500;
+letter-spacing: 0.15em; text-transform: uppercase;
+color: var(–green-light);
+margin-bottom: 20px;
+display: flex; align-items: center; gap: 10px;
+}
+
+.eyebrow::before {
+content: ‘’;
+display: block; width: 32px; height: 1px;
+background: var(–green-light);
+}
+
+h1 {
+font-family: ‘Bebas Neue’, sans-serif;
+font-size: clamp(72px, 10vw, 120px);
+line-height: 0.92;
+letter-spacing: 0.02em;
+color: var(–fairway);
+margin-bottom: 28px;
+}
+
+h1 span {
+color: var(–green-light);
+display: block;
+}
+
+.hero-sub {
+font-size: 18px; font-weight: 300; line-height: 1.65;
+color: var(–muted); max-width: 480px;
+margin-bottom: 44px;
+}
+
+.hero-cta {
+display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+
+.btn-primary {
+font-family: ‘DM Sans’, sans-serif;
+font-size: 15px; font-weight: 500;
+background: var(–fairway); color: var(–white);
+border: none; border-radius: 8px;
+padding: 16px 36px; cursor: pointer;
+letter-spacing: 0.03em;
+transition: background 0.2s, transform 0.15s;
+text-decoration: none; display: inline-block;
+}
+.btn-primary:hover { background: var(–green); transform: translateY(-2px); }
+
+.btn-secondary {
+font-size: 15px; font-weight: 500;
+color: var(–fairway); border: 1.5px solid var(–fairway);
+background: transparent; border-radius: 8px;
+padding: 15px 32px; cursor: pointer;
+letter-spacing: 0.03em;
+transition: all 0.2s;
+text-decoration: none; display: inline-block;
+}
+.btn-secondary:hover { background: var(–fairway); color: var(–white); transform: translateY(-2px); }
+
+.hero-stats {
+display: flex; gap: 48px; margin-top: 64px;
+padding-top: 40px; border-top: 1px solid var(–border);
+}
+
+.stat-num {
+font-family: ‘Bebas Neue’, sans-serif;
+font-size: 42px; color: var(–fairway);
+line-height: 1;
+}
+
+.stat-label {
+font-size: 12px; font-weight: 400;
+color: var(–muted); margin-top: 4px;
+letter-spacing: 0.04em;
+}
+
+/* HOW IT WORKS */
+.section { padding: 100px 48px; }
+
+.section-eyebrow {
+font-family: ‘DM Mono’, monospace;
+font-size: 11px; font-weight: 500;
+letter-spacing: 0.18em; text-transform: uppercase;
+color: var(–green-light); margin-bottom: 16px;
+}
+
+.section-title {
+font-family: ‘Bebas Neue’, sans-serif;
+font-size: clamp(42px, 6vw, 72px);
+color: var(–fairway); line-height: 1;
+letter-spacing: 0.02em; margin-bottom: 60px;
+}
+
+.steps {
+display: grid;
+grid-template-columns: repeat(3, 1fr);
+gap: 2px;
+}
+
+.step {
+background: var(–white);
+padding: 48px 40px;
+position: relative;
+transition: background 0.25s;
+}
+
+.step:hover { background: var(–green-pale); }
+
+.step-num {
+font-family: ‘Bebas Neue’, sans-serif;
+font-size: 80px; line-height: 1;
+color: var(–green-mid);
+margin-bottom: 24px;
+display: block;
+}
+
+.step-title {
+font-size: 20px; font-weight: 500;
+color: var(–ink); margin-bottom: 14px;
+}
+
+.step-body {
+font-size: 15px; font-weight: 300; line-height: 1.7;
+color: var(–muted);
+}
+
+/* LISTING PREVIEW */
+.listing-section {
+background: var(–fairway);
+padding: 100px 48px;
+color: var(–white);
+position: relative; overflow: hidden;
+}
+
+.listing-section::before {
+content: ‘’;
+position: absolute; inset: 0;
+background-image: repeating-linear-gradient(
+0deg, transparent, transparent 28px,
+rgba(255,255,255,0.02) 28px, rgba(255,255,255,0.02) 30px
+);
+}
+
+.listing-section .section-title { color: var(–white); }
+.listing-section .section-eyebrow { color: var(–green-light); }
+
+.listing-grid {
+display: grid;
+grid-template-columns: 1fr 1fr;
+gap: 32px; align-items: start;
+}
+
+.listing-left { position: relative; z-index: 1; }
+
+.listing-sub {
+font-size: 17px; font-weight: 300; line-height: 1.7;
+color: rgba(255,255,255,0.7); max-width: 440px;
+margin-bottom: 40px;
+}
+
+.feature-list { list-style: none; }
+
+.feature-list li {
+font-size: 15px; font-weight: 400;
+color: rgba(255,255,255,0.85);
+padding: 14px 0;
+border-bottom: 1px solid rgba(255,255,255,0.1);
+display: flex; align-items: center; gap: 14px;
+}
+
+.feature-list li::before {
+content: ‘’;
+width: 6px; height: 6px; border-radius: 50%;
+background: var(–green-light); flex-shrink: 0;
+}
+
+/* Fake app card */
+.app-card {
+background: var(–white);
+border-radius: 20px;
+overflow: hidden;
+position: relative; z-index: 1;
+transform: rotate(1.5deg);
+box-shadow: 0 32px 80px rgba(0,0,0,0.35);
+}
+
+.app-card-header {
+background: var(–fairway);
+padding: 20px 24px 16px;
+display: flex; align-items: center; gap: 10px;
+}
+
+.app-card-logo {
+font-family: ‘Bebas Neue’, sans-serif;
+font-size: 20px; color: var(–white);
+letter-spacing: 0.04em;
+}
+
+.app-dot { width: 7px; height: 7px; border-radius: 50%; background: var(–green-light); }
+
+.app-search {
+margin: 18px 18px 0;
+background: var(–cream);
+border-radius: 10px;
+padding: 12px 16px;
+display: flex; align-items: center; gap: 10px;
+font-size: 13px; color: var(–muted);
+}
+
+.search-icon { font-size: 16px; }
+
+.results-header {
+font-family: ‘DM Mono’, monospace;
+font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
+color: var(–muted);
+padding: 16px 18px 8px;
+}
+
+.range-item {
+margin: 0 14px 10px;
+background: var(–white);
+border: 1px solid var(–border);
+border-radius: 14px;
+padding: 16px;
+}
+
+.range-item-top {
+display: flex; justify-content: space-between; align-items: flex-start;
+margin-bottom: 8px;
+}
+
+.range-item-name {
+font-size: 14px; font-weight: 500; color: var(–ink);
+}
+
+.range-item-dist {
+font-size: 12px; font-weight: 500;
+background: var(–green-pale); color: var(–fairway);
+padding: 3px 10px; border-radius: 20px;
+}
+
+.range-item-meta {
+font-size: 12px; color: var(–muted); margin-bottom: 10px;
+}
+
+.range-tags-row { display: flex; gap: 6px; flex-wrap: wrap; }
+
+.rtag {
+font-size: 11px; color: var(–muted);
+border: 1px solid var(–border);
+border-radius: 20px; padding: 3px 9px;
+}
+
+.range-stars {
+font-size: 11px; color: var(–muted); margin-top: 8px;
+}
+
+/* PRICING */
+.pricing-section { padding: 100px 48px; background: var(–white); }
+
+.pricing-card {
+max-width: 520px; margin: 0 auto;
+border: 2px solid var(–fairway);
+border-radius: 20px;
+padding: 60px 56px;
+text-align: center;
+position: relative; overflow: hidden;
+}
+
+.pricing-card::before {
+content: ‘FOR RANGE OWNERS’;
+position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+font-family: ‘DM Mono’, monospace;
+font-size: 10px; letter-spacing: 0.18em;
+color: var(–green-light);
+}
+
+.price-amount {
+font-family: ‘Bebas Neue’, sans-serif;
+font-size: 100px; line-height: 1;
+color: var(–fairway);
+margin: 16px 0 0;
+}
+
+.price-period {
+font-size: 16px; font-weight: 300; color: var(–muted);
+margin-bottom: 40px;
+}
+
+.pricing-features { list-style: none; text-align: left; margin-bottom: 44px; }
+
+.pricing-features li {
+font-size: 15px; font-weight: 400;
+color: var(–ink);
+padding: 13px 0;
+border-bottom: 1px solid var(–border);
+display: flex; align-items: center; gap: 12px;
+}
+
+.pricing-features li .check {
+width: 20px; height: 20px; border-radius: 50%;
+background: var(–green-pale);
+display: flex; align-items: center; justify-content: center;
+flex-shrink: 0;
+font-size: 11px; color: var(–fairway);
+}
+
+.pricing-note {
+font-size: 13px; color: var(–muted); margin-top: 20px;
+}
+
+/* SIGNUP */
+.signup-section {
+padding: 100px 48px;
+background: var(–ink);
+color: var(–white);
+text-align: center;
+position: relative; overflow: hidden;
+}
+
+.signup-section::before {
+content: ‘’;
+position: absolute; inset: 0;
+background: radial-gradient(ellipse 60% 80% at 50% 50%, rgba(26,122,74,0.15) 0%, transparent 70%);
+}
+
+.signup-section .section-title { color: var(–white); position: relative; }
+.signup-section .section-eyebrow { position: relative; }
+
+.signup-sub {
+font-size: 18px; font-weight: 300; line-height: 1.65;
+color: rgba(255,255,255,0.6); max-width: 480px;
+margin: 0 auto 48px; position: relative;
+}
+
+.signup-form {
+display: flex; gap: 12px; max-width: 460px;
+margin: 0 auto; position: relative; flex-wrap: wrap;
+}
+
+.signup-input {
+flex: 1; min-width: 220px;
+font-family: ‘DM Sans’, sans-serif;
+font-size: 15px; font-weight: 300;
+background: rgba(255,255,255,0.08);
+border: 1px solid rgba(255,255,255,0.18);
+border-radius: 8px;
+padding: 15px 20px;
+color: var(–white);
+outline: none;
+transition: border-color 0.2s;
+}
+.signup-input::placeholder { color: rgba(255,255,255,0.4); }
+.signup-input:focus { border-color: var(–green-light); }
+
+.btn-signup {
+font-family: ‘DM Sans’, sans-serif;
+font-size: 15px; font-weight: 500;
+background: var(–green-light); color: var(–white);
+border: none; border-radius: 8px;
+padding: 15px 32px; cursor: pointer;
+letter-spacing: 0.03em;
+transition: background 0.2s, transform 0.15s;
+white-space: nowrap;
+}
+.btn-signup:hover { background: var(–green); transform: translateY(-2px); }
+
+.signup-promise {
+font-size: 12px; color: rgba(255,255,255,0.35);
+margin-top: 16px; position: relative;
+letter-spacing: 0.03em;
+}
+
+/* FOOTER */
+footer {
+background: var(–ink); border-top: 1px solid rgba(255,255,255,0.07);
+padding: 40px 48px;
+display: flex; align-items: center; justify-content: space-between;
+flex-wrap: wrap; gap: 20px;
+}
+
+.footer-logo {
+font-family: ‘Bebas Neue’, sans-serif;
+font-size: 22px; color: rgba(255,255,255,0.4);
+letter-spacing: 0.04em;
+}
+
+.footer-copy {
+font-size: 13px; color: rgba(255,255,255,0.25);
+}
+
+/* ANIMATIONS */
+.fade-up {
+opacity: 0; transform: translateY(28px);
+animation: fadeUp 0.7s ease forwards;
+}
+
+@keyframes fadeUp {
+to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-up:nth-child(1) { animation-delay: 0.1s; }
+.fade-up:nth-child(2) { animation-delay: 0.25s; }
+.fade-up:nth-child(3) { animation-delay: 0.4s; }
+.fade-up:nth-child(4) { animation-delay: 0.55s; }
+.fade-up:nth-child(5) { animation-delay: 0.7s; }
+
+/* Scroll reveal */
+.reveal {
+opacity: 0; transform: translateY(40px);
+transition: opacity 0.7s ease, transform 0.7s ease;
+}
+.reveal.visible { opacity: 1; transform: translateY(0); }
+
+/* RESPONSIVE */
+@media (max-width: 900px) {
+nav { padding: 16px 24px; }
+.nav-links { display: none; }
+.hero { padding: 100px 24px 60px; }
+.hero-stats { gap: 28px; flex-wrap: wrap; }
+.radar-rings { display: none; }
+.section { padding: 72px 24px; }
+.steps { grid-template-columns: 1fr; }
+.listing-section { padding: 72px 24px; }
+.listing-grid { grid-template-columns: 1fr; }
+.app-card { transform: none; }
+.pricing-section { padding: 72px 24px; }
+.pricing-card { padding: 48px 28px; }
+.signup-section { padding: 72px 24px; }
+footer { padding: 32px 24px; flex-direction: column; text-align: center; }
+}
+
+/* Success state */
+.success-msg {
+display: none;
+color: var(–green-light);
+font-size: 15px; margin-top: 16px;
+position: relative;
+}
+</style>
+
+</head>
+<body>
+
+<!-- NAV -->
+
+<nav>
+  <div class="nav-logo">
+    <div class="radar-dot"></div>
+    RangeRadar
+  </div>
+  <div class="nav-links">
+    <a href="#how-it-works">How it works</a>
+    <a href="#for-ranges">For ranges</a>
+    <a href="#pricing">Pricing</a>
+    <button class="btn-nav" onclick="document.getElementById('signup').scrollIntoView({behavior:'smooth'})">List your range</button>
+  </div>
+</nav>
+
+<!-- HERO -->
+
+<section class="hero">
+  <div class="hero-bg"></div>
+
+  <svg class="radar-rings" viewBox="0 0 600 600">
+    <circle class="ring-4" cx="300" cy="300" r="260"/>
+    <circle class="ring-3" cx="300" cy="300" r="200"/>
+    <circle class="ring-2" cx="300" cy="300" r="140"/>
+    <circle class="ring-1" cx="300" cy="300" r="80"/>
+    <g class="radar-sweep">
+      <line x1="300" y1="300" x2="300" y2="40" stroke="#22a05e" stroke-width="1" opacity="0.3"/>
+      <line x1="300" y1="300" x2="560" y2="300" stroke="#22a05e" stroke-width="0.5" opacity="0.15"/>
+    </g>
+    <!-- Range pins -->
+    <circle cx="370" cy="210" r="5" fill="#22a05e" opacity="0.7"/>
+    <circle cx="420" cy="310" r="4" fill="#22a05e" opacity="0.5"/>
+    <circle cx="310" cy="380" r="6" fill="#22a05e" opacity="0.8"/>
+    <circle cx="240" cy="240" r="3" fill="#22a05e" opacity="0.4"/>
+  </svg>
+
+  <div class="hero-content">
+    <div class="eyebrow fade-up">The golf range finder for traveling golfers</div>
+    <h1 class="fade-up">Find your<span>range.</span></h1>
+    <p class="hero-sub fade-up">Every driving range and practice facility in the USA — searched by where you are, right now. No clutter. No guessing. Just grip it and rip it.</p>
+    <div class="hero-cta fade-up">
+      <a href="#signup" class="btn-primary">List your range — $7/mo</a>
+      <a href="#how-it-works" class="btn-secondary">See how it works</a>
+    </div>
+    <div class="hero-stats fade-up">
+      <div>
+        <div class="stat-num">15K+</div>
+        <div class="stat-label">Ranges nationwide</div>
+      </div>
+      <div>
+        <div class="stat-num">25M</div>
+        <div class="stat-label">Golfers in the US</div>
+      </div>
+      <div>
+        <div class="stat-num">$7</div>
+        <div class="stat-label">Per month to list</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+
+<section class="section" id="how-it-works">
+  <div class="section-eyebrow reveal">For golfers on the go</div>
+  <div class="section-title reveal">Simple as<br>a tap.</div>
+  <div class="steps">
+    <div class="step reveal">
+      <span class="step-num">01</span>
+      <div class="step-title">Open RangeRadar</div>
+      <p class="step-body">Share your location or type a zip code or city. No account needed to browse every range in the country.</p>
+    </div>
+    <div class="step reveal">
+      <span class="step-num">02</span>
+      <div class="step-title">See the nearest 5 first</div>
+      <p class="step-body">The closest facilities pop up immediately — with hours, amenities, pricing, and distance from where you're standing right now.</p>
+    </div>
+    <div class="step reveal">
+      <span class="step-num">03</span>
+      <div class="step-title">Pick your range, swing away</div>
+      <p class="step-body">Get directions, check if there's a bar, read real reviews from golfers just like you — then go beat some buckets.</p>
+    </div>
+  </div>
+</section>
+
+<!-- LISTING PREVIEW -->
+
+<section class="listing-section" id="for-ranges">
+  <div class="section-eyebrow reveal">For driving ranges &amp; practice facilities</div>
+  <div class="listing-grid">
+    <div class="listing-left">
+      <div class="section-title reveal">Put your range<br>on the map.</div>
+      <p class="listing-sub reveal">Thousands of traveling golfers are looking for a place to practice right now. For less than a bucket of balls a month, make sure they find you.</p>
+      <ul class="feature-list reveal">
+        <li>Full listing with hours, pricing &amp; photos</li>
+        <li>Amenity tags — grass tees, covered bays, bar &amp; grill, putting green</li>
+        <li>User reviews and star ratings</li>
+        <li>Distance-based search ranking</li>
+        <li>Self-serve dashboard — update anytime</li>
+        <li>Analytics — see how many golfers viewed your listing</li>
+      </ul>
+    </div>
+
+```
+<!-- App preview card -->
+<div class="app-card reveal">
+  <div class="app-card-header">
+    <div class="app-dot"></div>
+    <div class="app-dot" style="opacity:0.5;width:5px;height:5px;"></div>
+    <div class="app-card-logo">RangeRadar</div>
+  </div>
+  <div class="app-search">
+    <span class="search-icon">📍</span>
+    Near Philadelphia, PA
+  </div>
+  <div class="results-header">5 nearest ranges</div>
+
+  <div class="range-item">
+    <div class="range-item-top">
+      <div class="range-item-name">Neshaminy Valley Golf</div>
+      <div class="range-item-dist">1.2 mi</div>
+    </div>
+    <div class="range-item-meta">Trevose, PA · Open until 9 PM · $$</div>
+    <div class="range-tags-row">
+      <span class="rtag">Grass tees</span>
+      <span class="rtag">Covered bays</span>
+      <span class="rtag">Bar &amp; grill</span>
+    </div>
+    <div class="range-stars">★★★★☆ 4.1 · 38 reviews</div>
+  </div>
+
+  <div class="range-item">
+    <div class="range-item-top">
+      <div class="range-item-name">Pinecrest Golf Center</div>
+      <div class="range-item-dist">3.4 mi</div>
+    </div>
+    <div class="range-item-meta">Langhorne, PA · Open until 8 PM · $</div>
+    <div class="range-tags-row">
+      <span class="rtag">Mats</span>
+      <span class="rtag">Putting green</span>
+      <span class="rtag">Chipping area</span>
+    </div>
+    <div class="range-stars">★★★★★ 4.6 · 72 reviews</div>
+  </div>
+
+  <div class="range-item" style="opacity:0.5; margin-bottom:18px;">
+    <div class="range-item-top">
+      <div class="range-item-name">Paxon Hollow Country Club</div>
+      <div class="range-item-dist">5.1 mi</div>
+    </div>
+    <div class="range-item-meta">Broomall, PA · Open until 7 PM · $$$</div>
+  </div>
+</div>
+```
+
+  </div>
+</section>
+
+<!-- PRICING -->
+
+<section class="pricing-section" id="pricing">
+  <div style="text-align:center; margin-bottom:60px;">
+    <div class="section-eyebrow reveal">Transparent pricing</div>
+    <div class="section-title reveal">No surprises.</div>
+  </div>
+  <div class="pricing-card reveal">
+    <div class="price-amount">$7</div>
+    <div class="price-period">per month, per listing · cancel anytime</div>
+    <ul class="pricing-features">
+      <li><span class="check">✓</span> Full facility listing page</li>
+      <li><span class="check">✓</span> Hours, pricing &amp; amenity details</li>
+      <li><span class="check">✓</span> Up to 10 photos</li>
+      <li><span class="check">✓</span> User reviews &amp; ratings</li>
+      <li><span class="check">✓</span> Distance-based search placement</li>
+      <li><span class="check">✓</span> Self-serve dashboard</li>
+      <li><span class="check">✓</span> Monthly view &amp; click analytics</li>
+    </ul>
+    <a href="#signup" class="btn-primary" style="width:100%; text-align:center; display:block;">List your range today</a>
+    <p class="pricing-note">Powered by Stripe · Secure · No contracts</p>
+  </div>
+</section>
+
+<!-- SIGNUP / WAITLIST -->
+
+<section class="signup-section" id="signup">
+  <div class="section-eyebrow">Early access</div>
+  <div class="section-title">Be first on<br>the radar.</div>
+  <p class="signup-sub">RangeRadar is launching soon. Range owners who sign up now lock in the $7/month rate for life — and get listed on day one.</p>
+  <form class="signup-form" onsubmit="handleSignup(event)">
+    <input class="signup-input" type="email" placeholder="your@email.com" required id="email-input">
+    <button class="btn-signup" type="submit">Get early access</button>
+  </form>
+  <div class="success-msg" id="success-msg">
+    You're on the list! We'll be in touch before launch day. ⛳
+  </div>
+  <p class="signup-promise">No spam. No nonsense. Just a heads-up when we go live.</p>
+</section>
+
+<!-- FOOTER -->
+
+<footer>
+  <div class="footer-logo">RangeRadar</div>
+  <div class="footer-copy">© 2026 RangeRadar · Built for golfers who never stop swinging</div>
+</footer>
+
+<script>
+  // Scroll reveal
+  const reveals = document.querySelectorAll('.reveal');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry, i) => {
+      if (entry.isIntersecting) {
+        setTimeout(() => entry.target.classList.add('visible'), i * 80);
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.12 });
+  reveals.forEach(el => observer.observe(el));
+
+  // Signup form
+  function handleSignup(e) {
+    e.preventDefault();
+    const email = document.getElementById('email-input').value;
+    document.querySelector('.signup-form').style.display = 'none';
+    const msg = document.getElementById('success-msg');
+    msg.style.display = 'block';
+    console.log('Signup:', email);
+  }
+</script>
+
+</body>
+</html>
